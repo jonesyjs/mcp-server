@@ -1,0 +1,25 @@
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-server
+    ports:
+      - "8223:8223"
+    volumes:
+      # Mount your local skills directory
+      - ~/Desktop/Project/skills/skills:/skills:ro
+      # Mount config (optional override)
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - mcp-server
+    restart: unless-stopped
+

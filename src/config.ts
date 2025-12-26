@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import yaml from "js-yaml";
 import { resolve } from "path";
 import { homedir } from "os";
@@ -40,8 +40,21 @@ function expandPaths(obj: unknown): unknown {
   return obj;
 }
 
-export function loadConfig(configPath = "config.yaml"): Config {
-  const raw = readFileSync(configPath, "utf-8");
+function resolveConfigPath(): string {
+  // Priority: CONFIG_PATH env > config.local.yaml > config.yaml
+  if (process.env.CONFIG_PATH) {
+    return process.env.CONFIG_PATH;
+  }
+  if (existsSync("config.local.yaml")) {
+    return "config.local.yaml";
+  }
+  return "config.yaml";
+}
+
+export function loadConfig(configPath?: string): Config {
+  const path = configPath ?? resolveConfigPath();
+  console.log(`Loading config from: ${path}`);
+  const raw = readFileSync(path, "utf-8");
   const parsed = yaml.load(raw) as Config;
   return expandPaths(parsed) as Config;
 }

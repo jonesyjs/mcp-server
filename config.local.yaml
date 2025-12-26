@@ -5,5 +5,5 @@ server:
 plugins:
   personas:
     enabled: true
-    skillsPath: /skills
+    skillsPath: ~/Desktop/Project/skills/skills
 
