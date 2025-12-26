@@ -1,0 +1,9 @@
+server:
+  name: "Agent-Specs"
+  port: 8223
+
+plugins:
+  personas:
+    enabled: true
+    skillsPath: ~/Desktop/Project/skills/skills
+
