@@ -10,6 +10,32 @@ const accessTokens = new Map<string, { expires: number }>();
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || "changeme";
 const CLIENT_SECRET = process.env.CLIENT_SECRET || "mcp-secret";
 
+// OAuth discovery endpoint - ChatGPT looks for this
+router.get("/.well-known/oauth-authorization-server", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  res.json({
+    issuer: baseUrl,
+    authorization_endpoint: `${baseUrl}/authorize`,
+    token_endpoint: `${baseUrl}/token`,
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code"],
+    token_endpoint_auth_methods_supported: ["client_secret_post"],
+  });
+});
+
+// Also support the OpenID Connect discovery path
+router.get("/.well-known/openid-configuration", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  res.json({
+    issuer: baseUrl,
+    authorization_endpoint: `${baseUrl}/authorize`,
+    token_endpoint: `${baseUrl}/token`,
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code"],
+    token_endpoint_auth_methods_supported: ["client_secret_post"],
+  });
+});
+
 // Clean expired entries periodically
 setInterval(() => {
   const now = Date.now();
