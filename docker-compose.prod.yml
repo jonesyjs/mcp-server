@@ -10,6 +10,7 @@ services:
       - NODE_ENV=production
       - AUTH_PASSWORD=${AUTH_PASSWORD}
       - CLIENT_SECRET=${CLIENT_SECRET}
+      - NTFY_TOPIC=${NTFY_TOPIC}
     restart: unless-stopped
 
   cloudflared:
