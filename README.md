@@ -33,6 +33,8 @@ Create `.env` file:
 
 ```bash
 CLOUDFLARE_TUNNEL_TOKEN=your_token_here
+AUTH_PASSWORD=your_secret_password
+CLIENT_SECRET=your_client_secret
 ```
 
 In Cloudflare dashboard, add a public hostname:
@@ -74,7 +76,15 @@ Config priority:
 ## Connect to ChatGPT
 
 1. Settings → Apps → Advanced Settings → Enable Developer Mode
-2. Add new connector with your URL + `/mcp`
+2. Add new MCP connector:
+   - **Name:** Agent Specs
+   - **MCP Server URL:** `https://mcp.yourdomain.com/mcp`
+   - **Authentication:** OAuth
+   - **Authorization URL:** `https://mcp.yourdomain.com/authorize`
+   - **Token URL:** `https://mcp.yourdomain.com/token`
+   - **Client ID:** `chatgpt` (or anything)
+   - **Client Secret:** (same as `CLIENT_SECRET` in your `.env`)
+3. Click Connect, enter your password when prompted
 
 ## Adding Plugins
 

@@ -8,6 +8,8 @@ services:
       - ~/skills:/skills:ro
     environment:
       - NODE_ENV=production
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - CLIENT_SECRET=${CLIENT_SECRET}
     restart: unless-stopped
 
   cloudflared:

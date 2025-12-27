@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { loadConfig } from "./config.js";
 import { createMcpServer } from "./mcp.js";
 import { loadPlugins } from "./plugins/index.js";
+import authRouter, { requireAuth } from "./auth.js";
 
 async function main() {
   // Load configuration
@@ -18,16 +19,20 @@ async function main() {
   // Create Express app
   const app = express();
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
-  // Health check
+  // Health check (no auth)
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", name: config.server.name });
   });
 
-  // MCP endpoint
+  // OAuth endpoints
+  app.use(authRouter);
+
+  // MCP endpoint (with auth)
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  
-  app.post("/mcp", async (req, res) => {
+
+  app.post("/mcp", requireAuth, async (req, res) => {
     try {
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
@@ -36,8 +41,8 @@ async function main() {
     }
   });
 
-  // Handle SSE for streaming (if needed)
-  app.get("/mcp", async (req, res) => {
+  // Handle SSE for streaming (with auth)
+  app.get("/mcp", requireAuth, async (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -51,8 +56,8 @@ async function main() {
   app.listen(config.server.port, () => {
     console.log(`MCP server running at http://localhost:${config.server.port}`);
     console.log(`MCP endpoint: http://localhost:${config.server.port}/mcp`);
+    console.log(`OAuth enabled - set AUTH_PASSWORD and CLIENT_SECRET env vars`);
   });
 }
 
 main().catch(console.error);
-
