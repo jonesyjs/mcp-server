@@ -3,27 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { loadConfig } from "./config.js";
 import { createMcpServer } from "./mcp.js";
 import { loadPlugins } from "./plugins/index.js";
-import authRouter, { requireAuth } from "./auth.js";
-
-// Simple notification function
-async function notifyAccess(ip: string, userAgent: string, path: string) {
-  const ntfyTopic = process.env.NTFY_TOPIC;
-  if (!ntfyTopic) return;
-
-  try {
-    await fetch(`https://ntfy.sh/${ntfyTopic}`, {
-      method: "POST",
-      headers: {
-        "Title": "MCP Server Access",
-        "Priority": "low",
-        "Tags": "robot",
-      },
-      body: `IP: ${ip}\nPath: ${path}\nUA: ${userAgent?.slice(0, 50)}`,
-    });
-  } catch (e) {
-    // Ignore notification errors
-  }
-}
+import authRouter from "./auth.js";
 
 async function main() {
   // Load configuration
@@ -49,15 +29,6 @@ async function main() {
 
   // OAuth endpoints
   app.use(authRouter);
-
-  // Access logging middleware
-  app.use("/mcp", (req, res, next) => {
-    const ip = req.get("cf-connecting-ip") || req.ip || "unknown";
-    const ua = req.get("user-agent") || "unknown";
-    console.log(`[MCP] ${req.method} from ${ip}`);
-    notifyAccess(ip, ua, req.path);
-    next();
-  });
 
   // MCP endpoint
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
