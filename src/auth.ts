@@ -12,7 +12,9 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET || "mcp-secret";
 
 // OAuth discovery endpoint - ChatGPT looks for this
 router.get("/.well-known/oauth-authorization-server", (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  // Use X-Forwarded-Proto if behind proxy (Cloudflare), otherwise req.protocol
+  const protocol = req.get("x-forwarded-proto") || req.protocol;
+  const baseUrl = `${protocol}://${req.get("host")}`;
   res.json({
     issuer: baseUrl,
     authorization_endpoint: `${baseUrl}/authorize`,
@@ -25,7 +27,8 @@ router.get("/.well-known/oauth-authorization-server", (req, res) => {
 
 // Also support the OpenID Connect discovery path
 router.get("/.well-known/openid-configuration", (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const protocol = req.get("x-forwarded-proto") || req.protocol;
+  const baseUrl = `${protocol}://${req.get("host")}`;
   res.json({
     issuer: baseUrl,
     authorization_endpoint: `${baseUrl}/authorize`,

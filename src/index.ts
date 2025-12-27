@@ -18,6 +18,7 @@ async function main() {
 
   // Create Express app
   const app = express();
+  app.set("trust proxy", true); // Trust Cloudflare proxy headers
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
