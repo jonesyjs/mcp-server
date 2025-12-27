@@ -33,7 +33,7 @@ async function main() {
   // MCP endpoint (with auth)
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
-  app.post("/mcp", requireAuth, async (req, res) => {
+  app.post("/mcp", async (req, res) => {
     try {
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
@@ -42,8 +42,8 @@ async function main() {
     }
   });
 
-  // Handle SSE for streaming (with auth)
-  app.get("/mcp", requireAuth, async (req, res) => {
+  // Handle SSE for streaming
+  app.get("/mcp", async (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
