@@ -2,14 +2,28 @@ services:
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.2.1
     container_name: git-sync
+    user: "0:0"
     environment:
       - GITSYNC_REPO=https://github.com/jonesyjs/agent-specs.git
       - GITSYNC_REF=main
       - GITSYNC_ROOT=/data
       - GITSYNC_LINK=repo
       - GITSYNC_PERIOD=60s
+      - GITSYNC_DEPTH=1
+      - GITSYNC_ONE_TIME=false
     volumes:
-      - C:/mcp-server/agent-specs:/data
+      - agent-specs-data:/data
+    restart: unless-stopped
+
+  file-sync:
+    image: alpine:latest
+    container_name: file-sync
+    command: sh -c "while true; do REALPATH=$$(readlink -f /source/repo); if [ -d \"$$REALPATH/skills\" ]; then rm -rf /dest/* /dest/.[^.]* 2>/dev/null; cp -a \"$$REALPATH/skills\"/. /dest/ 2>&1 || true; fi; sleep 5; done"
+    volumes:
+      - agent-specs-data:/source:ro
+      - C:/mcp-server/skills:/dest
+    depends_on:
+      - git-sync
     restart: unless-stopped
 
   mcp-server:
@@ -18,7 +32,9 @@ services:
     ports:
       - "8223:8223"
     volumes:
-      - C:/mcp-server/agent-specs/repo/skills:/skills:ro
+      - agent-specs-data:/agent-specs:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ln -sf /agent-specs/repo/skills /skills 2>/dev/null || true && exec npx tsx src/index.ts"]
     depends_on:
       - git-sync
     restart: unless-stopped
@@ -44,3 +60,6 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=30
     restart: unless-stopped
+
+volumes:
+  agent-specs-data:
