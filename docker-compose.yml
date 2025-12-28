@@ -7,3 +7,15 @@ services:
     volumes:
       - ~/Desktop/Project/skills/skills:/skills:ro
     restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    command: http mcp-server:8223 --log stdout
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"  # ngrok web UI to see the URL
+    depends_on:
+      - mcp-server
+    restart: unless-stopped
