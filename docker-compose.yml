@@ -1,11 +1,26 @@
 services:
+  git-sync:
+    image: registry.k8s.io/git-sync/git-sync:v4.2.1
+    container_name: git-sync
+    environment:
+      - GITSYNC_REPO=https://github.com/jonesyjs/agent-specs.git
+      - GITSYNC_REF=main
+      - GITSYNC_ROOT=/data
+      - GITSYNC_LINK=repo
+      - GITSYNC_PERIOD=60s
+    volumes:
+      - C:/mcp-server/agent-specs:/data
+    restart: unless-stopped
+
   mcp-server:
     image: ghcr.io/jonesyjs/mcp-server:latest
     container_name: mcp-server
     ports:
       - "8223:8223"
     volumes:
-      - C:/mcp-server/skills:/skills:ro
+      - C:/mcp-server/agent-specs/repo/skills:/skills:ro
+    depends_on:
+      - git-sync
     restart: unless-stopped
 
   ngrok:
@@ -24,7 +39,7 @@ services:
     image: containrrr/watchtower
     container_name: watchtower
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - //var/run/docker.sock:/var/run/docker.sock
     environment:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_POLL_INTERVAL=30
