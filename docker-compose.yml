@@ -1,11 +1,11 @@
 services:
   mcp-server:
-    build: .
+    image: ghcr.io/jonesyjs/mcp-server:latest
     container_name: mcp-server
     ports:
       - "8223:8223"
     volumes:
-      - ~/Desktop/Project/skills/skills:/skills:ro
+      - C:/mcp-server/skills:/skills:ro
     restart: unless-stopped
 
   ngrok:
@@ -15,7 +15,7 @@ services:
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     ports:
-      - "4040:4040"  # ngrok web UI to see the URL
+      - "4040:4040"
     depends_on:
       - mcp-server
     restart: unless-stopped
