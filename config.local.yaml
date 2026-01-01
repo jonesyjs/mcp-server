@@ -7,3 +7,8 @@ plugins:
     enabled: true
     skillsPath: ~/Desktop/Project/skills/skills
 
+  gtasks:
+    enabled: true
+    credentialsPath: ~/path/to/gcp-oauth.keys.json
+    tokenPath: ~/path/to/.gtasks-token.json
+
