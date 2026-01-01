@@ -8,7 +8,7 @@ plugins:
     skillsPath: /skills
 
   gtasks:
-    enabled: false
+    enabled: true
     credentialsPath: /secrets/gcp-oauth.keys.json
     tokenPath: /secrets/.gtasks-token.json
 
