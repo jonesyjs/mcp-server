@@ -3,3 +3,8 @@ dist/
 .env
 *.log
 
+# Google OAuth
+gcp-oauth.keys.json
+.gtasks-token.json
+*.keys.json
+
