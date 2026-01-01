@@ -33,6 +33,7 @@ services:
       - "8223:8223"
     volumes:
       - agent-specs-data:/agent-specs:ro
+      - ./secrets:/secrets:ro
     entrypoint: ["/bin/sh", "-c"]
     command: ["ln -sf /agent-specs/repo/skills /skills 2>/dev/null || true && exec npx tsx src/index.ts"]
     depends_on:
