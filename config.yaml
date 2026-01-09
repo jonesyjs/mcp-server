@@ -12,3 +12,13 @@ plugins:
     credentialsPath: /secrets/gcp-oauth.keys.json
     tokenPath: /secrets/.gtasks-token.json
 
+  wake:
+    enabled: false                     # Enable to use wake_session tool
+    maxConcurrentSessions: 5
+    defaultIdleTimeout: 86400          # 24 hours in seconds
+    defaultResumeMode: continue        # new | continue | resume
+    happyCommand: happy
+    projects: {}
+      # Add project aliases here:
+      # my-app: /path/to/my-app
+      # api-server: /path/to/api-server

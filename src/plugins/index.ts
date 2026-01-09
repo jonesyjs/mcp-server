@@ -2,12 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Config, PluginConfig } from "../config.js";
 import { registerPersonas } from "./personas.js";
 import { registerGtasks } from "./gtasks.js";
+import { registerWake } from "./wake.js";
 
 type PluginRegistrar = (mcp: McpServer, config: PluginConfig) => void;
 
 const plugins: Record<string, PluginRegistrar> = {
   personas: registerPersonas,
   gtasks: registerGtasks,
+  wake: registerWake,
 };
 
 export function loadPlugins(mcp: McpServer, config: Config): void {
@@ -27,4 +29,3 @@ export function loadPlugins(mcp: McpServer, config: Config): void {
     registrar(mcp, pluginConfig);
   }
 }
-
