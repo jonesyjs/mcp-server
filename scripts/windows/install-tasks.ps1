@@ -16,10 +16,14 @@ $LogPath = "$McpServerPath\logs"
 $NgrokPath = "C:\Users\simon\bin\ngrok.exe"
 $NodePath = (Get-Command node -ErrorAction Stop).Source
 
+# Use npx.cmd (not npx.ps1) so cmd.exe can run it
+$NpxPath = "C:\Program Files\nodejs\npx.cmd"
+
 Write-Host "Setting up MCP Server via Task Scheduler" -ForegroundColor Cyan
 Write-Host "  Server Path: $McpServerPath"
 Write-Host "  Log Path: $LogPath"
 Write-Host "  Node Path: $NodePath"
+Write-Host "  Npx Path: $NpxPath"
 Write-Host ""
 
 # Create logs directory
@@ -33,10 +37,10 @@ Unregister-ScheduledTask -TaskName "MCP Ngrok" -Confirm:$false -ErrorAction Sile
 # --- MCP Server Task ---
 Write-Host "Creating MCP Server task..." -ForegroundColor Yellow
 
-# Use cmd.exe to run in the right directory
+# Use full path to npx with logging
 $mcpAction = New-ScheduledTaskAction `
     -Execute "cmd.exe" `
-    -Argument "/c cd /d `"$McpServerPath`" && npx tsx src/index.ts"
+    -Argument "/c cd /d `"$McpServerPath`" && `"$NpxPath`" tsx src/index.ts > `"$LogPath\mcp-server.log`" 2>&1"
 
 $mcpTrigger = New-ScheduledTaskTrigger -AtStartup
 

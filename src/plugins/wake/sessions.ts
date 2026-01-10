@@ -162,24 +162,31 @@ export class SessionManager {
 
     const sessionId = this.generateSessionId();
 
-    // Build command: claude -p "task" --output-format stream-json --verbose
+    // Build command: claude -p "task" --output-format stream-json --verbose --dangerously-skip-permissions
     const args = [
       "-p",
       task,
       "--output-format",
       "stream-json",
       "--verbose",
+      "--dangerously-skip-permissions",
     ];
 
     console.log(`[wake] Spawning session ${sessionId}: claude ${args.join(" ")}`);
     console.log(`[wake] Working directory: ${projectPath}`);
 
     try {
-      const childProcess = spawn("claude", args, {
-        cwd: projectPath,
-        shell: true,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      // On Windows, use cmd.exe to run claude to handle .cmd scripts properly
+      const childProcess = process.platform === "win32"
+        ? spawn("cmd.exe", ["/c", "claude", ...args], {
+            cwd: projectPath,
+            stdio: ["ignore", "pipe", "pipe"],
+            windowsHide: true,
+          })
+        : spawn("claude", args, {
+            cwd: projectPath,
+            stdio: ["ignore", "pipe", "pipe"],
+          });
 
       if (!childProcess.pid) {
         return { success: false, error: "Failed to spawn Claude Code process (no PID)" };
