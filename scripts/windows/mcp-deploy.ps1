@@ -46,13 +46,22 @@ function Write-Log {
 
 try {
     Set-Location $RepoPath
+
+    # Mark this repo as safe (fixes ownership issues when run as scheduled task)
+    $safeDir = $RepoPath -replace '\\', '/'
+    git config --global --add safe.directory $safeDir 2>$null
+    git config --global --add safe.directory '*' 2>$null
+
     Write-Log "Starting deploy check in $RepoPath"
 
     # Fetch latest from remote
     Write-Log "Fetching from origin..."
-    $fetchOutput = git fetch origin main 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Git fetch failed: $fetchOutput"
+    $ErrorActionPreference = "Continue"
+    $null = git fetch origin main 2>&1
+    $fetchExit = $LASTEXITCODE
+    $ErrorActionPreference = "Stop"
+    if ($fetchExit -ne 0) {
+        throw "Git fetch failed with exit code $fetchExit"
     }
 
     # Get local and remote HEADs
@@ -75,11 +84,14 @@ try {
 
     # Pull changes
     Write-Log "Pulling changes..."
+    $ErrorActionPreference = "Continue"
     $pullOutput = git pull origin main 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Git pull failed: $pullOutput"
+    $pullExit = $LASTEXITCODE
+    $ErrorActionPreference = "Stop"
+    if ($pullExit -ne 0) {
+        throw "Git pull failed with exit code $pullExit"
     }
-    Write-Log "Pull complete: $pullOutput"
+    Write-Log "Pull complete"
 
     # Install dependencies (in case package.json changed)
     Write-Log "Running npm install..."
