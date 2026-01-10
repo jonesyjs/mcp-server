@@ -22,3 +22,8 @@ plugins:
       # Add project aliases here:
       # my-app: /path/to/my-app
       # api-server: /path/to/api-server
+
+  obsidian:
+    enabled: false                     # Enable to use obsidian_* tools
+    baseUrl: http://127.0.0.1:27123    # Obsidian Local REST API URL
+    apiKey: ${OBSIDIAN_API_KEY}        # API key from Local REST API plugin

@@ -16,6 +16,13 @@ export interface Config {
   plugins: Record<string, PluginConfig>;
 }
 
+function expandEnvVars(value: string): string {
+  // Replace ${VAR_NAME} with environment variable value
+  return value.replace(/\$\{(\w+)\}/g, (_, varName) => {
+    return process.env[varName] || "";
+  });
+}
+
 function expandPath(path: string): string {
   if (path.startsWith("~")) {
     return path.replace("~", homedir());
@@ -25,7 +32,12 @@ function expandPath(path: string): string {
 
 function expandPaths(obj: unknown): unknown {
   if (typeof obj === "string") {
-    return expandPath(obj);
+    const expanded = expandEnvVars(obj);
+    // Only expand as path if it looks like a path (starts with / or ~ or .)
+    if (expanded.startsWith("/") || expanded.startsWith("~") || expanded.startsWith(".")) {
+      return expandPath(expanded);
+    }
+    return expanded;
   }
   if (Array.isArray(obj)) {
     return obj.map(expandPaths);
