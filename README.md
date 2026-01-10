@@ -41,3 +41,4 @@ Your MCP endpoint: `https://YOUR_NGROK_URL/mcp`
 | `list_personas()` | List all available personas |
 | `activate_persona(name)` | Load a persona's instructions |
 | `get_component(name)` | Load shared components |
+# Auto-deploy test - Sat, Jan 10, 2026  8:37:29 PM
