@@ -89,18 +89,11 @@ try {
     }
     Write-Log "npm install complete"
 
-    # Restart mcp-server service (not ngrok!)
-    Write-Log "Restarting mcp-server service..."
-
-    # Try nssm first, fall back to net stop/start
-    try {
-        nssm restart mcp-server
-    } catch {
-        Write-Log "NSSM not available, trying net stop/start..." -Level "WARN"
-        net stop mcp-server 2>$null
-        Start-Sleep -Seconds 2
-        net start mcp-server
-    }
+    # Restart mcp-server task (not ngrok - to preserve tunnel URL)
+    Write-Log "Restarting MCP Server task..."
+    Stop-ScheduledTask -TaskName "MCP Server" -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+    Start-ScheduledTask -TaskName "MCP Server"
 
     Write-Log "Deploy complete!" -Level "SUCCESS"
 

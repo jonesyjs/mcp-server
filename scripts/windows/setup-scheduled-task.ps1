@@ -50,17 +50,16 @@ $settings = New-ScheduledTaskSettingsSet `
     -RunOnlyIfNetworkAvailable `
     -MultipleInstances IgnoreNew
 
-# Create the task
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Highest
-
-$task = New-ScheduledTask `
+# Register the task with SYSTEM account
+Register-ScheduledTask `
+    -TaskName $TaskName `
     -Action $action `
     -Trigger $trigger `
     -Settings $settings `
-    -Principal $principal `
-    -Description "Checks for MCP server updates and deploys if changes detected"
-
-Register-ScheduledTask -TaskName $TaskName -InputObject $task -Force | Out-Null
+    -User "SYSTEM" `
+    -RunLevel Highest `
+    -Description "Checks for MCP server updates and deploys if changes detected" `
+    -Force | Out-Null
 
 Write-Host "Scheduled task created successfully!" -ForegroundColor Green
 Write-Host ""
