@@ -46,12 +46,13 @@ $mcpSettings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -ExecutionTimeLimit (New-TimeSpan -Days 9999)
 
+# Run as current user (needed for Happy CLI which requires TTY access)
 Register-ScheduledTask `
     -TaskName "MCP Server" `
     -Action $mcpAction `
     -Trigger $mcpTrigger `
     -Settings $mcpSettings `
-    -User "SYSTEM" `
+    -User "$env:USERDOMAIN\$env:USERNAME" `
     -RunLevel Highest `
     -Description "MCP Server on port 8223" `
     -Force | Out-Null
