@@ -5,10 +5,20 @@ server:
 plugins:
   personas:
     enabled: true
-    skillsPath: ~/Desktop/Project/skills/skills
+    skillsPath: ~/OneDrive/Desktop/Projects/agent-specs/skills
+
+  wake:
+    enabled: true
+    projects:
+      - name: mcp-server
+        path: ~/OneDrive/Desktop/Projects/mcp-server
+        description: MCP server with skills and wake plugin
+      - name: agent-specs
+        path: ~/OneDrive/Desktop/Projects/agent-specs
+        description: Skills and persona definitions
 
   gtasks:
-    enabled: true
+    enabled: false
     credentialsPath: ~/path/to/gcp-oauth.keys.json
     tokenPath: ~/path/to/.gtasks-token.json
 
