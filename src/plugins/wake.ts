@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PluginConfig } from "../config.js";
 import { z } from "zod";
-import { SessionManager, WakeConfig } from "./wake/sessions.js";
+import { SessionManager, WakeConfig, getNormalizedEvents } from "./wake/sessions.js";
 
 // Singleton session manager - shared with server for WebSocket handling
 let sessionManager: SessionManager | null = null;
@@ -122,11 +122,12 @@ export function registerWake(mcp: McpServer, config: PluginConfig): void {
   // -------------------------------------------------------------------------
   mcp.tool(
     "get_session",
-    "Get the status and result of a Claude Code session.",
+    "Get the status, events, and result of a Claude Code session. Use fromIndex to get only new events since last poll.",
     {
       sessionId: z.string().describe("Session ID from wake_session"),
+      fromIndex: z.number().optional().describe("Start from this event index (0-based). Omit to get all events."),
     },
-    async ({ sessionId }) => {
+    async ({ sessionId, fromIndex }) => {
       const session = sessionManager!.getSession(sessionId);
 
       if (!session) {
@@ -138,12 +139,17 @@ export function registerWake(mcp: McpServer, config: PluginConfig): void {
         };
       }
 
+      const startIdx = fromIndex ?? 0;
+      const normalizedEvents = getNormalizedEvents(session, startIdx);
+
       const response: Record<string, unknown> = {
         sessionId: session.sessionId,
         status: session.status,
         project: session.project,
         startTime: session.startTime.toISOString(),
-        eventCount: session.events.length,
+        totalEvents: session.events.length,
+        fromIndex: startIdx,
+        events: normalizedEvents,
       };
 
       if (session.status === "complete" && session.result) {

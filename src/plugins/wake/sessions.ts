@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from "child_process";
-import { WebSocket } from "ws";
 import { createInterface } from "readline";
 
 // ============================================================================
@@ -20,8 +19,14 @@ export interface Session {
   events: StreamEvent[];
   result?: string;
   error?: string;
-  clients: Set<WebSocket>;
 }
+
+// Normalized event types for API responses
+export type NormalizedEvent =
+  | { type: "assistant"; text: string }
+  | { type: "tool_use"; tool: string; input: string }
+  | { type: "tool_result"; output: string }
+  | { type: "complete"; result: string; duration_ms?: number; cost?: number };
 
 export interface StreamEvent {
   type: string;
@@ -32,6 +37,76 @@ export interface StreamEvent {
 export interface WakeConfig {
   maxConcurrentSessions: number;
   projects: Array<{ name: string; path: string; description?: string }>;
+}
+
+// ============================================================================
+// Event Normalization
+// ============================================================================
+
+function truncate(str: string, maxLen: number = 2000): string {
+  if (!str) return "";
+  if (str.length <= maxLen) return str;
+  return str.slice(0, maxLen) + `\n... (truncated, ${str.length - maxLen} more chars)`;
+}
+
+export function normalizeEvent(raw: StreamEvent): NormalizedEvent[] {
+  const results: NormalizedEvent[] = [];
+
+  if (raw.type === "system") {
+    // Skip init events
+    return results;
+  }
+
+  if (raw.type === "assistant") {
+    const message = raw.message as { content?: Array<{ type: string; text?: string; name?: string; input?: unknown }> } | undefined;
+    if (message?.content) {
+      for (const item of message.content) {
+        if (item.type === "text" && item.text) {
+          results.push({ type: "assistant", text: item.text });
+        }
+        if (item.type === "tool_use" && item.name) {
+          results.push({
+            type: "tool_use",
+            tool: item.name,
+            input:
+              typeof item.input === "string"
+                ? truncate(item.input)
+                : truncate(JSON.stringify(item.input, null, 2)),
+          });
+        }
+      }
+    }
+  }
+
+  if (raw.type === "user") {
+    const message = raw.message as { content?: Array<{ type: string; content?: string }> } | undefined;
+    if (message?.content) {
+      for (const item of message.content) {
+        if (item.type === "tool_result") {
+          results.push({
+            type: "tool_result",
+            output: truncate(item.content || ""),
+          });
+        }
+      }
+    }
+  }
+
+  if (raw.type === "result") {
+    results.push({
+      type: "complete",
+      result: truncate((raw.result as string) || "", 4000),
+      duration_ms: raw.duration_ms as number | undefined,
+      cost: raw.total_cost_usd as number | undefined,
+    });
+  }
+
+  return results;
+}
+
+export function getNormalizedEvents(session: Session, fromIndex: number = 0): NormalizedEvent[] {
+  const eventsToProcess = session.events.slice(fromIndex);
+  return eventsToProcess.flatMap(normalizeEvent);
 }
 
 // ============================================================================
@@ -202,7 +277,6 @@ export class SessionManager {
         startTime: new Date(),
         status: "running",
         events: [],
-        clients: new Set(),
       };
 
       this.sessions.set(sessionId, session);
@@ -236,11 +310,6 @@ export class SessionManager {
           if (code !== 0) {
             s.error = `Process exited with code ${code}`;
           }
-          this.broadcast(sessionId, {
-            type: "server",
-            event: "disconnected",
-            reason: `Process exited with code ${code}`,
-          });
         }
       });
 
@@ -250,11 +319,6 @@ export class SessionManager {
         if (s) {
           s.status = "error";
           s.error = err.message;
-          this.broadcast(sessionId, {
-            type: "server",
-            event: "error",
-            message: err.message,
-          });
         }
       });
 
@@ -300,12 +364,6 @@ export class SessionManager {
       }
 
       session.status = "complete";
-      this.broadcast(sessionId, {
-        type: "server",
-        event: "killed",
-        sessionId,
-      });
-
       return { success: true };
     } catch (err) {
       // Process may already be dead
@@ -314,50 +372,14 @@ export class SessionManager {
   }
 
   // ---------------------------------------------------------------------------
-  // WebSocket Client Management
+  // Event Handling
   // ---------------------------------------------------------------------------
-
-  addClient(sessionId: string, ws: WebSocket): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      ws.send(JSON.stringify({ type: "server", event: "error", message: "Session not found" }));
-      ws.close();
-      return;
-    }
-
-    session.clients.add(ws);
-
-    // Send connection confirmation
-    ws.send(JSON.stringify({ type: "server", event: "connected", sessionId }));
-
-    // Replay event history
-    for (const event of session.events) {
-      ws.send(JSON.stringify(event));
-    }
-
-    // Handle disconnect
-    ws.on("close", () => {
-      session.clients.delete(ws);
-    });
-  }
-
-  private broadcast(sessionId: string, event: StreamEvent): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) return;
-
-    const message = JSON.stringify(event);
-    for (const client of session.clients) {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    }
-  }
 
   private handleEvent(sessionId: string, event: StreamEvent): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    // Store event for replay
+    // Store event
     session.events.push(event);
 
     // Extract result if this is a final event
@@ -368,9 +390,6 @@ export class SessionManager {
         session.error = (event.error as string) || "Unknown error";
       }
     }
-
-    // Broadcast to all connected clients
-    this.broadcast(sessionId, event);
   }
 
   // ---------------------------------------------------------------------------
@@ -379,17 +398,13 @@ export class SessionManager {
 
   shutdown(): void {
     console.log("[wake] Shutting down, terminating all sessions...");
-    for (const [sessionId, session] of this.sessions) {
+    for (const [, session] of this.sessions) {
       if (session.status === "running") {
         try {
           process.kill(session.pid, "SIGTERM");
         } catch {
           // Ignore
         }
-      }
-      // Close all WebSocket connections
-      for (const client of session.clients) {
-        client.close();
       }
     }
     this.sessions.clear();
